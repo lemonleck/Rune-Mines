@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>尖塔扫雷</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <section class="topbar">
+      <div>
+        <p class="eyebrow">Rune Mine Expedition</p>
+        <h1>尖塔扫雷</h1>
+      </div>
+      <div class="player-strip">
+        <div><span>等级</span><strong id="levelText">1</strong></div>
+        <div><span>经验</span><strong id="xpText">0 / 100</strong></div>
+        <div><span>金币</span><strong id="coinText">0</strong></div>
+        <div><span>倍率</span><strong id="levelBonusText">x1.00</strong></div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <aside class="panel left-panel">
+        <div class="panel-title">
+          <h2>难度</h2>
+          <button id="newGameBtn" class="primary">新一局</button>
+        </div>
+        <div id="difficultyList" class="difficulty-list"></div>
+
+        <div class="rules">
+          <h2>结算公式</h2>
+          <p>金币 = 基础 120 × 难度权重 × 时间系数 × 等级倍率 × 道具倍率</p>
+          <p>时间系数 = 目标时间 / 实际结算时间，最低 0.35，最高 2.50。</p>
+        </div>
+      </aside>
+
+      <section class="board-panel">
+        <div class="status-row">
+          <div><span>模式</span><strong id="modeText">简单</strong></div>
+          <div><span>雷</span><strong id="mineText">10</strong></div>
+          <div><span>旗</span><strong id="flagText">0</strong></div>
+          <div><span>时间</span><strong id="timerText">0s</strong></div>
+          <div><span>预计</span><strong id="estimateText">120</strong></div>
+        </div>
+        <div class="message" id="messageText">左键翻开，右键插旗。先赢几局，给角色攒出第一套装备。</div>
+        <div class="active-items" id="activeItems"></div>
+        <div class="board-wrap">
+          <div id="board" class="board"></div>
+        </div>
+      </section>
+
+      <aside class="panel shop-panel">
+        <div class="panel-title">
+          <h2>商店</h2>
+          <button id="resetBtn" class="ghost">重置存档</button>
+        </div>
+        <div class="upgrade-box">
+          <div>
+            <span>下一等级</span>
+            <strong id="upgradeCostText">100 金币</strong>
+          </div>
+          <button id="upgradeBtn" class="primary small">升级</button>
+        </div>
+        <div id="shopList" class="shop-list"></div>
+      </aside>
+    </section>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>
