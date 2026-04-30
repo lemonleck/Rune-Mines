@@ -10,6 +10,8 @@ Rune Mines is a browser-based Minesweeper variant with character progression, co
 - Four difficulties: Easy, Advanced, Hard, and Ultimate, each with different board sizes, mine counts, target times, and reward weights.
 - Progression system: earn coins and XP from wins, then level up to increase the settlement multiplier.
 - Shop system: buy permanent items that apply automatically or provide active abilities in future runs.
+- Loadout system: owned items must be equipped to take effect, and higher levels unlock more passive and active slots.
+- Achievements and daily tasks: long-term goals are split into Beginner, Intermediate, Advanced, and Special achievements; daily tasks refresh each day and grant larger coin rewards.
 - Time-based rewards: faster clears increase the final coin payout.
 - Local save: level, XP, coins, and owned items are stored in browser `localStorage`.
 
@@ -73,6 +75,16 @@ Shop items unlock gradually by level:
 - Income: increase victory coins or add multipliers under specific conditions.
 - Settlement: reduce final settlement time to make speed rewards easier to trigger.
 - Endgame: strengthen coin and XP rewards in Ultimate difficulty.
+
+Purchased items only take effect after being selected in the loadout. At level 1, the player can equip 1 passive item and 1 active item. More slots unlock as the player levels up, reaching 2 passive slots and 3 active slots at level 10.
+
+The shop also sells the expensive Tactician Pass. If the next run uses more than the base slot limit, 1 pass is consumed to temporarily add 1 passive slot and 1 active slot. It is designed for score pushes and high-difficulty attempts.
+
+## Achievements And Daily Tasks
+
+Achievements are split into Beginner, Intermediate, Advanced, and Special groups. Beginner, Intermediate, and Advanced achievements are tiered goals, such as finishing 50, 100, and 200 games. Special achievements are one-time challenges, such as the first Hard clear, the first Ultimate clear, or winning without flags. Achievement rewards are paid automatically when unlocked.
+
+Daily tasks refresh by local date. They include goals such as finishing games, winning a run, and placing flags. Completed daily tasks must be claimed manually, and each task can only be claimed once per day.
 
 ## Project Structure
 

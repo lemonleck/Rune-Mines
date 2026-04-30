@@ -34,6 +34,27 @@
           <p>金币 = 基础 120 × 难度权重 × 时间系数 × 等级倍率 × 道具倍率</p>
           <p>时间系数 = 目标时间 / 实际结算时间，最低 0.35，最高 2.50。</p>
         </div>
+
+        <div class="goal-section loadout-section">
+          <div class="panel-title">
+            <h2>出战配置</h2>
+            <span id="loadoutSummary">被动 0/1，主动 0/1</span>
+          </div>
+          <h3>被动位</h3>
+          <div id="passiveLoadout" class="loadout-grid"></div>
+          <h3>主动位</h3>
+          <div id="activeLoadout" class="loadout-grid"></div>
+        </div>
+
+        <div class="goal-section">
+          <h2>每日任务</h2>
+          <div id="dailyTaskList" class="goal-list"></div>
+        </div>
+
+        <div class="goal-section">
+          <h2>成就</h2>
+          <div id="achievementList" class="goal-list achievement-list"></div>
+        </div>
       </aside>
 
       <section class="board-panel">
@@ -46,7 +67,7 @@
         </div>
         <div class="message" id="messageText">左键翻开，右键插旗。先赢几局，给角色攒出第一套装备。</div>
         <div class="active-items" id="activeItems"></div>
-        <div class="board-wrap">
+        <div class="board-wrap" id="boardWrap">
           <div id="board" class="board"></div>
         </div>
       </section>
@@ -67,6 +88,23 @@
       </aside>
     </section>
   </main>
+
+  <div class="result-overlay" id="resultOverlay" hidden>
+    <section class="result-panel" id="resultPanel">
+      <p class="eyebrow" id="resultKicker">Run Complete</p>
+      <h2 id="resultTitle">胜利</h2>
+      <div class="result-stats">
+        <div><span>金币</span><strong id="resultCoins">0</strong></div>
+        <div><span>经验</span><strong id="resultXp">0</strong></div>
+        <div><span>用时</span><strong id="resultTime">0s</strong></div>
+      </div>
+      <p id="resultText"></p>
+      <div class="result-actions">
+        <button id="closeResultBtn" class="ghost">继续查看</button>
+        <button id="resultNewGameBtn" class="primary">新一局</button>
+      </div>
+    </section>
+  </div>
 
   <script src="game.js"></script>
 </body>
