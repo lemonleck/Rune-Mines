@@ -228,7 +228,7 @@ function startGame() {
   el.board.style.setProperty("--cell-size", `${size}px`);
   el.mode.textContent = diff.name;
   el.mines.textContent = diff.mines;
-  el.message.textContent = `${diff.name} expedition started. 右键插旗，主动道具在棋盘上方。`;
+  el.message.textContent = `${diff.name} 探险开始。右键插旗，主动道具在棋盘上方。`;
   renderBoard();
   renderActiveItems();
   tick();
