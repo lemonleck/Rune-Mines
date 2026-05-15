@@ -1,43 +1,51 @@
 const BASE_REWARD = 120;
-const SAVE_KEY = "spire-mines-save-v1";
+const SAVE_KEY = "spire-mines-save-v2";
 
 const difficulties = [
-  { id: "easy", name: "简单", rows: 9, cols: 9, mines: 10, weight: 1, target: 180, unlock: 1, note: "3 分钟完成：120 金币起步。" },
-  { id: "normal", name: "进阶", rows: 14, cols: 14, mines: 32, weight: 3.2, target: 300, unlock: 1, note: "地图变宽，节奏开始吃判断。" },
-  { id: "hard", name: "困难", rows: 16, cols: 24, mines: 88, weight: 8, target: 360, unlock: 1, note: "6 分钟完成：960 金币起步，难度占比明显更高。" },
-  { id: "ultimate", name: "终极", rows: 18, cols: 30, mines: 145, weight: 17, target: 480, unlock: 10, note: "10 级解锁。高风险高收入。" }
+  { id: "easy", name: "简单", rows: 9, cols: 9, mines: 10, weight: 1, target: 180, unlock: 1, note: "3 分钟目标，适合热身和攒第一批金币。" },
+  { id: "normal", name: "进阶", rows: 14, cols: 14, mines: 32, weight: 3.2, target: 300, unlock: 1, note: "地图更大，节奏开始考验判断。" },
+  { id: "hard", name: "困难", rows: 16, cols: 24, mines: 88, weight: 8, target: 360, unlock: 1, note: "高密度矿区，高收益也更吃操作。" },
+  { id: "ultimate", name: "终极", rows: 18, cols: 30, mines: 145, weight: 17, target: 480, unlock: 10, note: "10 级解锁，真正的高风险高回报。" }
 ];
 
+const eliteConfig = {
+  easy: { count: 1, doomLimit: 0 },
+  normal: { count: 2, doomLimit: 1 },
+  hard: { count: 3, doomLimit: 3 },
+  ultimate: { count: 4, doomLimit: 4 }
+};
+
 const items = [
-  { id: "ember-heart", name: "余烬之心", min: 1, price: 90, type: "护命", desc: "踩雷时免死 1 次，并翻开该格周围。", effect: "life", charges: 1 },
-  { id: "scout-lens", name: "斥候透镜", min: 1, price: 120, type: "主动", desc: "本局可揭示 5 个安全格。", effect: "revealSafe", charges: 5 },
-  { id: "chalk-mark", name: "矿脉粉笔", min: 2, price: 170, type: "主动", desc: "本局可自动标记 3 个雷。", effect: "markMine", charges: 3 },
+  { id: "ember-heart", name: "余烬之心", min: 1, price: 90, type: "护命", desc: "踩雷时免死 1 次，并立刻翻开该格周围区域。", effect: "life", charges: 1 },
+  { id: "scout-lens", name: "斥候透镜", min: 1, price: 120, type: "主动", desc: "本局可揭示 5 次安全格。", effect: "revealSafe", charges: 5 },
+  { id: "chalk-mark", name: "矿脉粉笔", min: 2, price: 170, type: "主动", desc: "本局可自动标记 3 颗雷。", effect: "markMine", charges: 3 },
   { id: "minute-knife", name: "分针匕首", min: 2, price: 220, type: "结算", desc: "结算时实际用时减少 60 秒。", effect: "timeCut", amount: 60 },
   { id: "copper-oath", name: "铜誓纹章", min: 3, price: 260, type: "收益", desc: "胜利金币 x1.08。", effect: "scoreMult", amount: 1.08 },
-  { id: "torch-map", name: "火把地图", min: 3, price: 310, type: "开局", desc: "开局自动翻开 8 个安全格。", effect: "startReveal", amount: 8 },
-  { id: "bone-dice", name: "骨骰", min: 4, price: 360, type: "收益", desc: "若 4 分钟内获胜，额外金币 x1.15。", effect: "fastBonus", limit: 240, amount: 1.15 },
+  { id: "torch-map", name: "火把地图", min: 3, price: 310, type: "开局", desc: "开局自动翻开 8 个安全数字格。", effect: "startReveal", amount: 8 },
+  { id: "bone-dice", name: "骨骰", min: 4, price: 360, type: "收益", desc: "4 分钟内胜利时额外金币 x1.15。", effect: "fastBonus", limit: 240, amount: 1.15 },
   { id: "rust-shield", name: "锈盾", min: 4, price: 420, type: "护命", desc: "额外获得 1 次免死。", effect: "life", charges: 1 },
   { id: "glass-orb", name: "观星玻璃", min: 5, price: 520, type: "主动", desc: "本局可窥视 2 个未知格是否为雷。", effect: "peek", charges: 2 },
   { id: "silver-contract", name: "银契约", min: 5, price: 640, type: "收益", desc: "胜利金币 x1.12。", effect: "scoreMult", amount: 1.12 },
-  { id: "fuse-cutter", name: "引线剪", min: 6, price: 760, type: "容错", desc: "错误插旗不会计入旗数，并提示一次。", effect: "flagGuard" },
+  { id: "fuse-cutter", name: "引线剪", min: 6, price: 760, type: "容错", desc: "错误插旗不会生效，并提供 1 次提醒。", effect: "flagGuard" },
   { id: "echo-bell", name: "回声铃", min: 6, price: 900, type: "主动", desc: "本局可展开 1 片安全空白区。", effect: "openZero", charges: 1 },
-  { id: "golden-nail", name: "金钉", min: 7, price: 1050, type: "收益", desc: "每剩 1 分钟目标时间，额外金币 +2%。", effect: "remainBonus" },
-  { id: "black-candle", name: "黑蜡烛", min: 7, price: 1250, type: "开局", desc: "开局随机移除 3 个雷并补成安全格。", effect: "removeMines", amount: 3 },
-  { id: "mirror-mask", name: "镜面假面", min: 8, price: 1480, type: "主动", desc: "本局可复制一次已购买主动道具的使用次数。", effect: "copyCharge", charges: 1 },
-  { id: "red-ledger", name: "猩红账本", min: 8, price: 1750, type: "收益", desc: "困难和终极难度金币 x1.18。", effect: "hardMult", amount: 1.18 },
-  { id: "spire-key", name: "尖塔钥匙", min: 9, price: 2100, type: "开局", desc: "每局首次点击必定打开一片更大的安全区域。", effect: "firstBloom" },
-  { id: "void-coin", name: "虚空铸币", min: 9, price: 2500, type: "收益", desc: "胜利金币 x1.20，但失败损失 80 金币。", effect: "riskyMult", amount: 1.2, penalty: 80 },
+  { id: "golden-nail", name: "金钉", min: 7, price: 1050, type: "收益", desc: "每快于目标时间 1 分钟，额外金币 +2%。", effect: "remainBonus" },
+  { id: "black-candle", name: "黑蜡灯", min: 7, price: 1250, type: "开局", desc: "开局随机移除 3 颗雷。", effect: "removeMines", amount: 3 },
+  { id: "mirror-mask", name: "镜面假面", min: 8, price: 1480, type: "主动", desc: "复制一个已拥有主动道具的 1 次使用次数。", effect: "copyCharge", charges: 1 },
+  { id: "red-ledger", name: "猩红账本", min: 8, price: 1750, type: "收益", desc: "困难与终极难度金币 x1.18。", effect: "hardMult", amount: 1.18 },
+  { id: "spire-key", name: "尖塔钥匙", min: 9, price: 2100, type: "开局", desc: "首击会额外清理一圈相邻地雷。", effect: "firstBloom" },
+  { id: "void-coin", name: "虚空铸币", min: 9, price: 2500, type: "收益", desc: "胜利金币 x1.20，但失败时损失 80 金币。", effect: "riskyMult", amount: 1.2, penalty: 80 },
   { id: "crown-clock", name: "王冠时钟", min: 10, price: 3200, type: "结算", desc: "结算时实际用时再减少 90 秒。", effect: "timeCut", amount: 90 },
-  { id: "ascension-core", name: "升格核心", min: 10, price: 4200, type: "终局", desc: "终极难度胜利金币 x1.35，且经验 x1.5。", effect: "ultimateCore", amount: 1.35 }
+  { id: "ascension-core", name: "升格核心", min: 10, price: 4200, type: "终局", desc: "终极难度胜利金币 x1.35，经验 x1.5。", effect: "ultimateCore", amount: 1.35 }
 ];
 
-const activeEffects = new Set(["revealSafe", "markMine", "peek", "openZero", "copyCharge"]);
 const quotaPass = {
   id: "tactician-pass",
   name: "战术增编令",
   price: 3000,
-  desc: "下一局若超出基础携带位，临时增加 1 个被动位和 1 个主动位。"
+  desc: "若下一局超出基础携带位，临时增加 1 个被动位和 1 个主动位。"
 };
+
+const activeEffects = new Set(["revealSafe", "markMine", "peek", "openZero", "copyCharge"]);
 
 const achievementGroups = [
   {
@@ -45,7 +53,7 @@ const achievementGroups = [
     items: [
       { id: "games-50", name: "矿区熟手", desc: "完成 50 局游戏", reward: 600, done: stats => stats.games >= 50 },
       { id: "wins-10", name: "稳定排雷", desc: "累计胜利 10 局", reward: 700, done: stats => stats.wins >= 10 },
-      { id: "coins-5000", name: "第一桶矿金", desc: "累计赢得 5000 金币", reward: 800, done: stats => stats.coinsEarned >= 5000 }
+      { id: "coins-5000", name: "第一桶矿金", desc: "累计赚得 5000 金币", reward: 800, done: stats => stats.coinsEarned >= 5000 }
     ]
   },
   {
@@ -53,7 +61,7 @@ const achievementGroups = [
     items: [
       { id: "games-100", name: "百局探险家", desc: "完成 100 局游戏", reward: 1400, done: stats => stats.games >= 100 },
       { id: "wins-30", name: "可靠矿长", desc: "累计胜利 30 局", reward: 1600, done: stats => stats.wins >= 30 },
-      { id: "coins-20000", name: "金脉经营者", desc: "累计赢得 20000 金币", reward: 1800, done: stats => stats.coinsEarned >= 20000 }
+      { id: "coins-20000", name: "金脉经营者", desc: "累计赚得 20000 金币", reward: 1800, done: stats => stats.coinsEarned >= 20000 }
     ]
   },
   {
@@ -61,7 +69,7 @@ const achievementGroups = [
     items: [
       { id: "games-200", name: "尖塔常客", desc: "完成 200 局游戏", reward: 3200, done: stats => stats.games >= 200 },
       { id: "wins-80", name: "排雷大师", desc: "累计胜利 80 局", reward: 3600, done: stats => stats.wins >= 80 },
-      { id: "coins-80000", name: "矿金巨匠", desc: "累计赢得 80000 金币", reward: 4200, done: stats => stats.coinsEarned >= 80000 }
+      { id: "coins-80000", name: "矿金巨匠", desc: "累计赚得 80000 金币", reward: 4200, done: stats => stats.coinsEarned >= 80000 }
     ]
   },
   {
@@ -115,7 +123,11 @@ const el = {
   resultCoins: document.getElementById("resultCoins"),
   resultXp: document.getElementById("resultXp"),
   resultTime: document.getElementById("resultTime"),
-  resultText: document.getElementById("resultText")
+  resultMeta: document.getElementById("resultMeta"),
+  resultText: document.getElementById("resultText"),
+  eliteRemaining: document.getElementById("eliteRemainingText"),
+  eliteBonus: document.getElementById("eliteBonusText"),
+  eliteDoom: document.getElementById("eliteDoomText")
 };
 
 document.getElementById("newGameBtn").addEventListener("click", startGame);
@@ -158,10 +170,14 @@ function defaultStats() {
     games: 0,
     wins: 0,
     coinsEarned: 0,
+    eliteOpened: 0,
+    eliteDoomTriggered: 0,
     noFlagWins: 0,
     fastEasyWins: 0,
     itemsOwned: 0,
-    difficultyWins: { easy: 0, normal: 0, hard: 0, ultimate: 0 }
+    difficultyWins: { easy: 0, normal: 0, hard: 0, ultimate: 0 },
+    bestRewardByDifficulty: { easy: 0, normal: 0, hard: 0, ultimate: 0 },
+    bestTimeByDifficulty: { easy: null, normal: null, hard: null, ultimate: null }
   };
 }
 
@@ -170,14 +186,17 @@ function defaultDaily() {
 }
 
 function normalizeSave(data) {
+  const statsDefaults = defaultStats();
   data.owned = Array.isArray(data.owned) ? data.owned : [];
   data.quotaPasses = Number.isFinite(data.quotaPasses) ? Math.max(0, data.quotaPasses) : 0;
   data.loadout = data.loadout || { passive: [], active: [] };
   data.loadout.passive = Array.isArray(data.loadout.passive) ? data.loadout.passive : [];
   data.loadout.active = Array.isArray(data.loadout.active) ? data.loadout.active : [];
   data.achievements = Array.isArray(data.achievements) ? data.achievements : [];
-  data.stats = { ...defaultStats(), ...(data.stats || {}) };
-  data.stats.difficultyWins = { ...defaultStats().difficultyWins, ...(data.stats.difficultyWins || {}) };
+  data.stats = { ...statsDefaults, ...(data.stats || {}) };
+  data.stats.difficultyWins = { ...statsDefaults.difficultyWins, ...(data.stats.difficultyWins || {}) };
+  data.stats.bestRewardByDifficulty = { ...statsDefaults.bestRewardByDifficulty, ...(data.stats.bestRewardByDifficulty || {}) };
+  data.stats.bestTimeByDifficulty = { ...statsDefaults.bestTimeByDifficulty, ...(data.stats.bestTimeByDifficulty || {}) };
   data.stats.itemsOwned = data.owned.length;
   data.daily = { ...defaultDaily(), ...(data.daily || {}) };
   data.daily.claimed = Array.isArray(data.daily.claimed) ? data.daily.claimed : [];
@@ -218,16 +237,19 @@ function baseLoadoutLimits(level = save.level) {
   };
 }
 
-function loadoutLimits() {
-  const base = baseLoadoutLimits();
-  const boost = save.quotaPasses > 0 ? 1 : 0;
+function loadoutLimitsFor(data) {
+  const base = baseLoadoutLimits(data.level);
+  const boost = data.quotaPasses > 0 ? 1 : 0;
   return { passive: base.passive + boost, active: base.active + boost };
+}
+
+function loadoutLimits() {
+  return loadoutLimitsFor(save);
 }
 
 function normalizeLoadout(data = save) {
   const owned = new Set(data.owned || []);
   const limits = loadoutLimitsFor(data);
-  data.loadout = data.loadout || { passive: [], active: [] };
   data.loadout.passive = [...new Set(data.loadout.passive || [])]
     .filter(id => {
       const item = items.find(entry => entry.id === id);
@@ -242,19 +264,13 @@ function normalizeLoadout(data = save) {
     .slice(0, limits.active);
 }
 
-function loadoutLimitsFor(data) {
-  const base = baseLoadoutLimits(data.level);
-  const boost = data.quotaPasses > 0 ? 1 : 0;
-  return { passive: base.passive + boost, active: base.active + boost };
-}
-
 function equippedIds() {
   normalizeLoadout();
   return [...save.loadout.passive, ...save.loadout.active];
 }
 
 function equippedItems() {
-  const ids = game && game.equipped ? game.equipped : equippedIds();
+  const ids = game?.equipped || equippedIds();
   return items.filter(item => ids.includes(item.id));
 }
 
@@ -263,10 +279,28 @@ function currentLoadoutUsesBoost() {
   return save.loadout.passive.length > base.passive || save.loadout.active.length > base.active;
 }
 
+function ownedEffects(effect) {
+  return equippedItems().filter(item => item.effect === effect);
+}
+
+function hasEffect(effect) {
+  return ownedEffects(effect).length > 0;
+}
+
+function levelBonus() {
+  return +(1 + (save.level - 1) * 0.15).toFixed(2);
+}
+
+function upgradeCost() {
+  return Math.round(100 * Math.pow(save.level, 1.72));
+}
+
 function recordFinishedGame(won, reward = 0) {
   ensureDaily();
   save.stats.games += 1;
   save.daily.stats.games += 1;
+  save.stats.eliteOpened += game?.eliteRun.opened || 0;
+  save.stats.eliteDoomTriggered += game?.eliteRun.doomCount || 0;
   if (!won) return;
   save.stats.wins += 1;
   save.stats.coinsEarned += reward;
@@ -276,11 +310,24 @@ function recordFinishedGame(won, reward = 0) {
   if (game.diff.id === "easy" && game.elapsed <= 60) save.stats.fastEasyWins += 1;
 }
 
+function updateBestRecords(reward, seconds) {
+  const result = { reward: false, time: false };
+  if (reward > save.stats.bestRewardByDifficulty[game.diff.id]) {
+    save.stats.bestRewardByDifficulty[game.diff.id] = reward;
+    result.reward = true;
+  }
+  const currentBest = save.stats.bestTimeByDifficulty[game.diff.id];
+  if (!currentBest || seconds < currentBest) {
+    save.stats.bestTimeByDifficulty[game.diff.id] = seconds;
+    result.time = true;
+  }
+  return result;
+}
+
 function checkAchievements(showMessage = true) {
   updateStatsSnapshot();
   const unlocked = new Set(save.achievements);
-  const newlyUnlocked = achievementGroups
-    .flatMap(group => group.items)
+  const newlyUnlocked = achievementGroups.flatMap(group => group.items)
     .filter(item => !unlocked.has(item.id) && item.done(save.stats));
   if (!newlyUnlocked.length) return;
   newlyUnlocked.forEach(item => {
@@ -293,14 +340,6 @@ function checkAchievements(showMessage = true) {
   }
 }
 
-function levelBonus() {
-  return +(1 + (save.level - 1) * 0.15).toFixed(2);
-}
-
-function upgradeCost() {
-  return Math.round(100 * Math.pow(save.level, 1.72));
-}
-
 function renderAll() {
   ensureDaily();
   updateStatsSnapshot();
@@ -310,6 +349,7 @@ function renderAll() {
   renderShop();
   renderLoadout();
   renderActiveItems();
+  renderEliteSummary();
   renderAchievements();
   renderDailyTasks();
   updateEstimate();
@@ -329,6 +369,8 @@ function renderDifficulties() {
   el.difficultyList.innerHTML = "";
   difficulties.forEach(diff => {
     const locked = save.level < diff.unlock;
+    const bestReward = save.stats.bestRewardByDifficulty[diff.id];
+    const bestTime = save.stats.bestTimeByDifficulty[diff.id];
     const card = document.createElement("button");
     card.className = `difficulty-card ${save.selected === diff.id ? "selected" : ""} ${locked ? "locked" : ""}`;
     card.disabled = locked;
@@ -341,6 +383,11 @@ function renderDifficulties() {
       <div class="stats">
         <b>${diff.rows} x ${diff.cols}</b><b>${diff.mines} 雷</b>
         <b>目标 ${formatTime(diff.target)}</b><b>预计 ${estimateReward(diff, diff.target)} 金币</b>
+      </div>
+      <div class="shop-meta">
+        <span class="tag">Elite ${eliteConfig[diff.id].count}</span>
+        <span class="tag">Best ${bestReward || 0}</span>
+        <span class="tag">${bestTime ? `Fast ${formatTime(bestTime)}` : "No Clear Yet"}</span>
       </div>
     `;
     card.addEventListener("click", () => {
@@ -355,6 +402,7 @@ function renderDifficulties() {
 
 function renderShop() {
   el.shopList.innerHTML = "";
+
   const passCard = document.createElement("div");
   passCard.className = "shop-card quota-card";
   passCard.innerHTML = `
@@ -375,6 +423,7 @@ function renderShop() {
   `;
   passCard.querySelector("button").addEventListener("click", buyQuotaPass);
   el.shopList.appendChild(passCard);
+
   items.forEach(item => {
     const owned = save.owned.includes(item.id);
     const locked = save.level < item.min;
@@ -390,10 +439,10 @@ function renderShop() {
       <div class="shop-meta">
         <span class="tag">${item.type}</span>
         <span class="tag">${item.min} 级</span>
-        <span class="tag">${equipped ? "出战中" : owned ? "仓库" : locked ? "未解锁" : "可购买"}</span>
+        <span class="tag">${equipped ? "已出战" : owned ? "仓库" : locked ? "未解锁" : "可购买"}</span>
       </div>
       <div class="shop-actions">
-        <span>${owned ? "在出战配置中选择" : "永久购买"}</span>
+        <span>${owned ? "可在出战配置中切换" : "永久购买"}</span>
         <button class="small" ${owned || locked || save.coins < item.price ? "disabled" : ""}>购买</button>
       </div>
     `;
@@ -408,33 +457,28 @@ function buyQuotaPass() {
   save.quotaPasses += 1;
   persist();
   renderAll();
-  el.message.textContent = `已购买 ${quotaPass.name}，下一局可临时多带 1 被动和 1 主动。`;
+  el.message.textContent = `已购买 ${quotaPass.name}，下次超载出战时会自动消耗。`;
 }
 
 function renderAchievements() {
-  if (!el.achievementList) return;
   const unlocked = new Set(save.achievements);
   el.achievementList.innerHTML = achievementGroups.map(group => `
     <div class="achievement-group">
       <h3>${group.title}</h3>
-      ${group.items.map(item => {
-        const done = unlocked.has(item.id);
-        return `
-          <div class="goal-card ${done ? "done" : ""}">
-            <div>
-              <b>${item.name}</b>
-              <p>${item.desc}</p>
-            </div>
-            <span class="reward">${done ? "已达成" : `+${item.reward}`}</span>
+      ${group.items.map(item => `
+        <div class="goal-card ${unlocked.has(item.id) ? "done" : ""}">
+          <div>
+            <b>${item.name}</b>
+            <p>${item.desc}</p>
           </div>
-        `;
-      }).join("")}
+          <span class="reward">${unlocked.has(item.id) ? "已完成" : `+${item.reward}`}</span>
+        </div>
+      `).join("")}
     </div>
   `).join("");
 }
 
 function renderDailyTasks() {
-  if (!el.dailyTaskList) return;
   ensureDaily();
   el.dailyTaskList.innerHTML = dailyTaskTemplates.map(task => {
     const progress = Math.min(task.target, task.progress(save.daily));
@@ -445,7 +489,7 @@ function renderDailyTasks() {
         <div>
           <b>${task.name}</b>
           <p>${task.desc}</p>
-          <div class="progress"><span style="width: ${progress / task.target * 100}%"></span></div>
+          <div class="progress"><span style="width: ${(progress / task.target) * 100}%"></span></div>
         </div>
         <button class="small" data-daily="${task.id}" ${!completed || claimed ? "disabled" : ""}>
           ${claimed ? "已领取" : `领 ${task.reward}`}
@@ -466,12 +510,10 @@ function claimDailyTask(id) {
   save.coins += task.reward;
   persist();
   renderAll();
-  el.message.textContent = `每日任务完成：获得 ${task.reward} 金币。`;
+  el.message.textContent = `每日任务完成，获得 ${task.reward} 金币。`;
 }
 
 function renderLoadout() {
-  if (!el.passiveLoadout || !el.activeLoadout) return;
-  normalizeLoadout();
   const limits = loadoutLimits();
   const base = baseLoadoutLimits();
   const boostText = save.quotaPasses > 0 ? `，临时令 ${save.quotaPasses} 张可用` : "";
@@ -483,7 +525,7 @@ function renderLoadout() {
 function renderLoadoutGroup(slot, target, limit, baseLimit) {
   const owned = items.filter(item => save.owned.includes(item.id) && itemSlot(item) === slot);
   if (!owned.length) {
-    target.innerHTML = `<p class="empty-loadout">购买${slot === "passive" ? "被动" : "主动"}道具后可配置出战。</p>`;
+    target.innerHTML = `<p class="empty-loadout">购买${slot === "passive" ? "被动" : "主动"}道具后即可配置出战。</p>`;
     return;
   }
   const selected = new Set(save.loadout[slot]);
@@ -503,13 +545,12 @@ function renderLoadoutGroup(slot, target, limit, baseLimit) {
   if (limit > baseLimit) {
     const note = document.createElement("p");
     note.className = "loadout-note";
-    note.textContent = "当前已启用临时配额位，超出基础位开局会消耗 1 张战术增编令。";
+    note.textContent = "超出基础位会在开局时消耗 1 张战术增编令。";
     target.appendChild(note);
   }
 }
 
 function toggleLoadout(slot, id) {
-  normalizeLoadout();
   const list = save.loadout[slot];
   const index = list.indexOf(id);
   if (index >= 0) {
@@ -541,22 +582,34 @@ function renderActiveItems() {
   });
 }
 
+function renderEliteSummary() {
+  if (!game) {
+    el.eliteRemaining.textContent = "0";
+    el.eliteBonus.textContent = "x1.00";
+    el.eliteDoom.textContent = "0";
+    return;
+  }
+  el.eliteRemaining.textContent = String(game.cells.filter(cell => cell.eliteType && !cell.open).length);
+  el.eliteBonus.textContent = `x${eliteMultiplier().toFixed(2)}`;
+  el.eliteDoom.textContent = String(game.eliteRun.doomCount);
+}
+
 function buyItem(item) {
   if (save.level < item.min || save.owned.includes(item.id) || save.coins < item.price) return;
   save.coins -= item.price;
   save.owned.push(item.id);
   autoEquipItem(item);
-  updateStatsSnapshot();
   checkAchievements();
   persist();
   renderAll();
+  el.message.textContent = `已购买 ${item.name}。`;
 }
 
 function autoEquipItem(item) {
-  normalizeLoadout();
   const slot = itemSlot(item);
-  if (save.loadout[slot].includes(item.id)) return;
-  if (save.loadout[slot].length < loadoutLimits()[slot]) save.loadout[slot].push(item.id);
+  if (!save.loadout[slot].includes(item.id) && save.loadout[slot].length < loadoutLimits()[slot]) {
+    save.loadout[slot].push(item.id);
+  }
 }
 
 function upgradeLevel() {
@@ -570,11 +623,15 @@ function upgradeLevel() {
 }
 
 function resetSave() {
-  if (!confirm("确定重置等级、金币和道具吗？")) return;
+  if (!confirm("确定重置等级、金币与道具存档吗？")) return;
   localStorage.removeItem(SAVE_KEY);
   save = loadSave();
   renderAll();
   startGame();
+}
+
+function currentDifficulty() {
+  return difficulties.find(diff => diff.id === save.selected) || difficulties[0];
 }
 
 function startGame() {
@@ -599,33 +656,40 @@ function startGame() {
     firstClick: true,
     equipped: runEquipped,
     quotaBoosted: boosted,
-    lives: runEquippedItems.filter(item => item.effect === "life").reduce((sum, item) => sum + item.charges, 0),
+    lives: runEquippedItems.filter(item => item.effect === "life").reduce((sum, item) => sum + (item.charges || 0), 0),
     flagGuard: runEquipped.some(id => items.find(item => item.id === id)?.effect === "flagGuard"),
     lastUsedItem: null,
     cells: [],
-    charges: {}
+    charges: {},
+    eliteRun: {
+      opened: 0,
+      vaultBonus: 0,
+      doomCount: 0,
+      scoutTriggers: 0
+    }
   };
+
   runEquippedItems.forEach(item => {
     if (itemSlot(item) === "active" && item.charges) game.charges[item.id] = item.charges;
   });
+
   buildCells();
   applyStartItems();
+  assignEliteCells();
   hideResult();
   clearBoardFeedback();
   el.board.style.gridTemplateColumns = `repeat(${diff.cols}, var(--cell-size))`;
   el.board.style.setProperty("--cell-size", `${size}px`);
   el.mode.textContent = diff.name;
   el.mines.textContent = diff.mines;
-  el.message.textContent = boosted ? `${diff.name} 探险开始。已消耗 1 张战术增编令。` : `${diff.name} 探险开始。右键插旗，主动道具在棋盘上方。`;
+  el.message.textContent = boosted
+    ? `${diff.name} 探险开始，临时配额已消耗 1 张增编令。`
+    : `${diff.name} 探险开始。右键插旗，留意闭合格上的 Elite 标记。`;
   renderLoadout();
   renderBoard();
   renderActiveItems();
   tick();
   timer = setInterval(tick, 1000);
-}
-
-function currentDifficulty() {
-  return difficulties.find(diff => diff.id === save.selected) || difficulties[0];
 }
 
 function buildCells() {
@@ -640,10 +704,16 @@ function buildCells() {
     open: false,
     flag: false,
     peeked: false,
+    eliteType: "",
+    eliteTriggered: false,
     justOpened: false,
     flash: "",
     count: 0
   }));
+  recalcCounts();
+}
+
+function recalcCounts() {
   game.cells.forEach(cell => {
     cell.count = neighbors(cell).filter(next => next.mine).length;
   });
@@ -652,21 +722,43 @@ function buildCells() {
 function applyStartItems() {
   if (hasEffect("removeMines")) {
     const amount = ownedEffects("removeMines").reduce((sum, item) => sum + item.amount, 0);
-    shuffle(game.cells.filter(cell => cell.mine)).slice(0, amount).forEach(cell => cell.mine = false);
-    game.cells.forEach(cell => cell.count = neighbors(cell).filter(next => next.mine).length);
-    game.diff.mines -= amount;
+    shuffle(game.cells.filter(cell => cell.mine)).slice(0, amount).forEach(cell => {
+      cell.mine = false;
+    });
+    game.diff.mines = game.cells.filter(cell => cell.mine).length;
+    recalcCounts();
   }
   if (hasEffect("startReveal")) {
     const amount = ownedEffects("startReveal").reduce((sum, item) => sum + item.amount, 0);
-    shuffle(game.cells.filter(cell => !cell.mine && cell.count > 0)).slice(0, amount).forEach(openCell);
+    shuffle(game.cells.filter(cell => !cell.mine && cell.count > 0)).slice(0, amount).forEach(cell => {
+      openCell(cell);
+    });
   }
+}
+
+function assignEliteCells() {
+  const config = eliteConfig[game.diff.id] || eliteConfig.easy;
+  const pool = shuffle(game.cells.filter(cell => !cell.mine && !cell.open)).slice(0, config.count);
+  let doomUsed = 0;
+  pool.forEach((cell, index) => {
+    const choices = ["vault", "scout"];
+    if (doomUsed < config.doomLimit) choices.push("doom");
+    if (game.diff.id === "hard" || game.diff.id === "ultimate") {
+      if (config.count - index <= config.doomLimit - doomUsed) cell.eliteType = "doom";
+      else cell.eliteType = shuffle(choices)[0];
+    } else {
+      cell.eliteType = shuffle(choices)[0];
+    }
+    if (cell.eliteType === "doom") doomUsed += 1;
+  });
 }
 
 function renderBoard() {
   el.board.innerHTML = "";
   game.cells.forEach(cell => {
     const node = document.createElement("button");
-    node.className = `cell ${cell.open ? "open" : ""} ${cell.justOpened ? "revealed" : ""} ${cell.mine && game.over ? "mine" : ""} ${cell.count ? `n${cell.count}` : ""} ${cell.flag ? "flagged" : ""} ${cell.flash ? `flash-${cell.flash}` : ""}`;
+    node.className = `cell ${cell.open ? "open" : ""} ${cell.justOpened ? "revealed" : ""} ${cell.mine && game.over ? "mine" : ""} ${cell.count ? `n${cell.count}` : ""} ${cell.flag ? "flagged" : ""} ${cell.flash ? `flash-${cell.flash}` : ""} ${cell.eliteType ? `elite elite-${cell.eliteType}` : ""}`;
+    node.dataset.eliteMark = cell.open || !cell.eliteType ? "" : eliteMark(cell.eliteType);
     node.textContent = cell.open ? (cell.mine ? "✹" : cell.count || "") : cell.flag ? "⚑" : cell.peeked ? (cell.mine ? "!" : "?") : "";
     node.addEventListener("click", () => handleOpen(cell));
     node.addEventListener("contextmenu", event => {
@@ -675,13 +767,16 @@ function renderBoard() {
     });
     el.board.appendChild(node);
   });
+
   game.cells.forEach(cell => {
     cell.justOpened = false;
     cell.flash = "";
   });
+
   el.flags.textContent = game.flags;
   el.mines.textContent = game.diff.mines;
   renderActiveItems();
+  renderEliteSummary();
   updateEstimate();
 }
 
@@ -689,16 +784,18 @@ function handleOpen(cell) {
   if (game.over || cell.open || cell.flag) return;
   if (game.firstClick) protectFirstClick(cell);
   game.firstClick = false;
+
   if (cell.mine) {
     if (game.lives > 0) {
       game.lives -= 1;
       cell.mine = false;
-      game.diff.mines -= 1;
-      game.cells.forEach(next => next.count = neighbors(next).filter(n => n.mine).length);
-      openArea(cell);
+      game.diff.mines = game.cells.filter(next => next.mine && next !== cell).length;
+      recalcCounts();
+      const rescued = openArea(cell);
+      triggerOpenedElites(rescued);
       flashCells([cell], "guard");
       triggerBoardFeedback("guard");
-      el.message.textContent = `余烬挡下了一次爆炸，剩余免死 ${game.lives} 次。`;
+      el.message.textContent = `余烬之心挡下了一次爆炸，剩余免死 ${game.lives} 次。`;
       renderBoard();
       checkWin();
       return;
@@ -706,25 +803,30 @@ function handleOpen(cell) {
     loseGame();
     return;
   }
-  openArea(cell);
+
+  const opened = openArea(cell);
+  triggerOpenedElites(opened);
   renderBoard();
   checkWin();
 }
 
 function protectFirstClick(cell) {
   if (!cell.mine && cell.count === 0 && !hasEffect("firstBloom")) return;
+
   if (cell.mine) {
     cell.mine = false;
-    const candidates = game.cells.filter(next => next.index !== cell.index && !next.mine);
-    const target = candidates[candidates.length - 1];
+    const target = shuffle(game.cells.filter(next => next.index !== cell.index && !next.mine))[0];
     if (target) target.mine = true;
   }
-  game.cells.forEach(next => next.count = neighbors(next).filter(n => n.mine).length);
-  if (hasEffect("firstBloom")) neighbors(cell).forEach(next => {
-    if (next.mine) next.mine = false;
-  });
-  game.cells.forEach(next => next.count = neighbors(next).filter(n => n.mine).length);
+
+  if (hasEffect("firstBloom")) {
+    neighbors(cell).forEach(next => {
+      if (next.mine) next.mine = false;
+    });
+  }
+
   game.diff.mines = game.cells.filter(next => next.mine).length;
+  recalcCounts();
 }
 
 function toggleFlag(cell) {
@@ -748,13 +850,15 @@ function toggleFlag(cell) {
 function openArea(start) {
   const stack = [start];
   const seen = new Set();
+  const opened = [];
   while (stack.length) {
     const cell = stack.pop();
     if (seen.has(cell.index) || cell.flag || cell.mine) continue;
     seen.add(cell.index);
-    openCell(cell);
+    if (openCell(cell)) opened.push(cell);
     if (cell.count === 0) neighbors(cell).forEach(next => stack.push(next));
   }
+  return opened;
 }
 
 function openCell(cell) {
@@ -762,36 +866,98 @@ function openCell(cell) {
     cell.open = true;
     cell.justOpened = true;
     game.opened += 1;
+    return true;
   }
+  return false;
+}
+
+function triggerOpenedElites(cells) {
+  cells.filter(cell => cell.eliteType && cell.open && !cell.eliteTriggered).forEach(cell => {
+    cell.eliteTriggered = true;
+    game.eliteRun.opened += 1;
+    applyEliteEffect(cell);
+  });
+}
+
+function applyEliteEffect(cell) {
+  if (cell.eliteType === "vault") {
+    game.eliteRun.vaultBonus += 1;
+    flashCells([cell], "eliteVault");
+    triggerBoardFeedback("elite");
+    el.message.textContent = "Elite Vault 已开启，本局金币赏金 +12%。";
+    return;
+  }
+
+  if (cell.eliteType === "scout") {
+    const around = shuffle(neighbors(cell).filter(next => !next.mine && !next.open && !next.flag)).slice(0, 3);
+    const affected = [];
+    if (around.length) {
+      around.forEach(next => {
+        if (openCell(next)) affected.push(next);
+      });
+    } else {
+      const fallback = shuffle(game.cells.filter(next => !next.mine && !next.open && !next.flag))[0];
+      if (fallback && openCell(fallback)) affected.push(fallback);
+    }
+    game.eliteRun.scoutTriggers += 1;
+    flashCells([cell, ...affected], "eliteScout");
+    triggerBoardFeedback("elite");
+    el.message.textContent = affected.length
+      ? `Elite Scout 额外侦测了 ${affected.length} 个安全格。`
+      : "Elite Scout 已触发，但没有可展开的安全格。";
+    triggerOpenedElites(affected);
+    return;
+  }
+
+  const promoted = shuffle(game.cells.filter(next => !next.mine && !next.open && !next.flag && !next.eliteType))[0];
+  if (promoted) {
+    promoted.mine = true;
+    game.diff.mines += 1;
+    recalcCounts();
+  }
+  game.eliteRun.doomCount += 1;
+  flashCells(promoted ? [cell, promoted] : [cell], "eliteDoom");
+  triggerBoardFeedback("elite");
+  el.message.textContent = promoted
+    ? "Elite Doom 已触发：赏金 +20%，同时矿区新增 1 颗地雷。"
+    : "Elite Doom 已触发：赏金 +20%，但没有合法位置可新增地雷。";
 }
 
 function useItem(id) {
   const item = items.find(entry => entry.id === id);
   if (!item || !game.charges[id]) return;
-  game.lastUsedItem = null;
-  const safeClosed = game.cells.filter(cell => !cell.open && !cell.flag && !cell.mine);
-  const mineClosed = game.cells.filter(cell => !cell.open && !cell.flag && cell.mine);
+
   let affected = [];
-  if (item.effect === "revealSafe" && safeClosed.length) {
-    const before = new Set(game.cells.filter(cell => cell.open).map(cell => cell.index));
-    openArea(shuffle(safeClosed)[0]);
-    affected = game.cells.filter(cell => cell.open && !before.has(cell.index));
-  }
-  if (item.effect === "markMine" && mineClosed.length) {
-    const mine = shuffle(mineClosed)[0];
-    mine.flag = true;
-    game.flags += 1;
-    affected = [mine];
-  }
-  if (item.effect === "peek") {
-    const closed = game.cells.filter(cell => !cell.open && !cell.flag && !cell.peeked);
-    if (closed.length) {
-      const peeked = shuffle(closed)[0];
-      peeked.peeked = true;
-      affected = [peeked];
+  game.lastUsedItem = null;
+
+  if (item.effect === "revealSafe") {
+    const safeClosed = game.cells.filter(cell => !cell.open && !cell.flag && !cell.mine);
+    if (safeClosed.length) {
+      const before = new Set(game.cells.filter(cell => cell.open).map(cell => cell.index));
+      openArea(shuffle(safeClosed)[0]);
+      affected = game.cells.filter(cell => cell.open && !before.has(cell.index));
     }
   }
+
+  if (item.effect === "markMine") {
+    const mine = shuffle(game.cells.filter(cell => !cell.open && !cell.flag && cell.mine))[0];
+    if (mine) {
+      mine.flag = true;
+      game.flags += 1;
+      affected = [mine];
+    }
+  }
+
+  if (item.effect === "peek") {
+    const target = shuffle(game.cells.filter(cell => !cell.open && !cell.flag && !cell.peeked))[0];
+    if (target) {
+      target.peeked = true;
+      affected = [target];
+    }
+  }
+
   if (item.effect === "openZero") {
+    const safeClosed = game.cells.filter(cell => !cell.open && !cell.flag && !cell.mine);
     const zero = safeClosed.find(cell => cell.count === 0) || safeClosed[0];
     if (zero) {
       const before = new Set(game.cells.filter(cell => cell.open).map(cell => cell.index));
@@ -799,14 +965,18 @@ function useItem(id) {
       affected = game.cells.filter(cell => cell.open && !before.has(cell.index));
     }
   }
+
   if (item.effect === "copyCharge") {
-    const target = Object.keys(game.charges).find(key => key !== id && game.charges[key] >= 0);
+    const target = Object.keys(game.charges).find(key => key !== id && game.charges[key] > 0);
     if (target) {
       game.charges[target] += 1;
+      affected = [];
     }
   }
+
   game.charges[id] -= 1;
   game.lastUsedItem = id;
+  triggerOpenedElites(affected);
   flashCells(affected, item.effect === "markMine" ? "mineHint" : "item");
   triggerBoardFeedback("item");
   renderBoard();
@@ -819,17 +989,17 @@ function checkWin() {
 }
 
 function flashCells(cells, type) {
-  cells.slice(0, 42).forEach(cell => {
+  cells.slice(0, 48).forEach(cell => {
     cell.flash = type;
   });
 }
 
 function triggerBoardFeedback(type) {
-  if (!el.boardWrap) return;
   const className = {
     boom: "impact-boom",
     guard: "impact-guard",
     item: "impact-item",
+    elite: "impact-elite",
     win: "impact-win"
   }[type];
   if (!className) return;
@@ -840,27 +1010,55 @@ function triggerBoardFeedback(type) {
 }
 
 function clearBoardFeedback() {
-  if (!el.boardWrap) return;
-  el.boardWrap.classList.remove("impact-boom", "impact-guard", "impact-item", "impact-win");
+  el.boardWrap.classList.remove("impact-boom", "impact-guard", "impact-item", "impact-elite", "impact-win");
 }
 
-function showResult({ won, title, coins, xp, seconds, text }) {
-  if (!el.resultOverlay) return;
+function showResult({ won, title, coins, xp, seconds, meta = [], text }) {
   el.resultOverlay.hidden = false;
   el.resultOverlay.classList.toggle("loss", !won);
   el.resultOverlay.classList.toggle("win", won);
   el.resultKicker.textContent = won ? "Run Cleared" : "Run Failed";
   el.resultTitle.textContent = title;
-  el.resultCoins.textContent = coins > 0 ? `+${coins}` : coins;
-  el.resultXp.textContent = xp > 0 ? `+${xp}` : xp;
+  el.resultCoins.textContent = coins > 0 ? `+${coins}` : `${coins}`;
+  el.resultXp.textContent = xp > 0 ? `+${xp}` : `${xp}`;
   el.resultTime.textContent = `${seconds}s`;
-  el.resultText.textContent = text;
+  el.resultMeta.innerHTML = meta.map(entry => `<span class="tag">${entry}</span>`).join("");
+  el.resultText.innerHTML = text;
 }
 
 function hideResult() {
-  if (!el.resultOverlay) return;
   el.resultOverlay.hidden = true;
   el.resultOverlay.classList.remove("win", "loss");
+  el.resultMeta.innerHTML = "";
+}
+
+function eliteMultiplier() {
+  if (!game) return 1;
+  return Math.pow(1.12, game.eliteRun.vaultBonus) * Math.pow(1.2, game.eliteRun.doomCount);
+}
+
+function eliteResultMeta(records = null) {
+  if (!game) return [];
+  const meta = [
+    `Elite x${eliteMultiplier().toFixed(2)}`,
+    `Vault ${game.eliteRun.vaultBonus}`,
+    `Scout ${game.eliteRun.scoutTriggers}`,
+    `Doom ${game.eliteRun.doomCount}`
+  ];
+  if (records?.reward) meta.push("New Reward Record");
+  if (records?.time) meta.push("New Time Record");
+  return meta;
+}
+
+function eliteResultText(won, records, coinDelta) {
+  const bonus = `本局触发精英格 ${game.eliteRun.opened} 次，赏金倍率为 x${eliteMultiplier().toFixed(2)}。`;
+  if (won) {
+    const notes = [];
+    if (records?.reward) notes.push(`刷新了 ${game.diff.name} 难度最高金币记录。`);
+    if (records?.time) notes.push(`刷新了 ${game.diff.name} 难度最快通关记录。`);
+    return `${bonus}<br>本局共结算 ${coinDelta} 金币。${notes.length ? `<br>${notes.join("<br>")}` : ""}`;
+  }
+  return `${bonus}<br>${coinDelta < 0 ? `失败额外损失 ${Math.abs(coinDelta)} 金币。` : "这次未能带走赏金，下次再冲一把。"}`;
 }
 
 function winGame() {
@@ -868,7 +1066,7 @@ function winGame() {
   clearInterval(timer);
   const reward = estimateReward(game.diff, game.elapsed);
   const xpGain = Math.round(game.diff.weight * 22 * (hasEffect("ultimateCore") && game.diff.id === "ultimate" ? 1.5 : 1));
-  const resultTime = game.elapsed;
+  const records = updateBestRecords(reward, game.elapsed);
   save.coins += reward;
   save.xp += xpGain;
   recordFinishedGame(true, reward);
@@ -878,17 +1076,20 @@ function winGame() {
   }
   checkAchievements();
   persist();
-  if (!el.message.textContent.startsWith("解锁成就")) el.message.textContent = `胜利！获得 ${reward} 金币、${xpGain} 经验。`;
+  if (!el.message.textContent.startsWith("解锁成就")) {
+    el.message.textContent = `胜利！获得 ${reward} 金币，${xpGain} 经验。`;
+  }
   renderAll();
   renderBoard();
   triggerBoardFeedback("win");
   showResult({
     won: true,
-    title: "探险成功",
+    title: "精英矿区已清空",
     coins: reward,
     xp: xpGain,
-    seconds: resultTime,
-    text: `清空 ${game.diff.name} 矿区，奖励已经入账。`
+    seconds: game.elapsed,
+    meta: eliteResultMeta(records),
+    text: eliteResultText(true, records, reward)
   });
 }
 
@@ -896,13 +1097,15 @@ function loseGame() {
   game.over = true;
   clearInterval(timer);
   const risky = equippedItems().find(item => item.effect === "riskyMult");
-  const resultTime = game.elapsed;
-  if (risky) save.coins = Math.max(0, save.coins - risky.penalty);
+  const penalty = risky ? risky.penalty : 0;
+  if (risky) save.coins = Math.max(0, save.coins - penalty);
   recordFinishedGame(false);
   checkAchievements();
   persist();
   if (!el.message.textContent.startsWith("解锁成就")) {
-    el.message.textContent = risky ? `爆炸失败。虚空铸币吞掉了 ${risky.penalty} 金币。` : "爆炸失败。换套道具再来一局。";
+    el.message.textContent = risky
+      ? `爆炸失败，虚空铸币吞掉了 ${penalty} 金币。`
+      : "爆炸失败，调整出战配置后再试一次。";
   }
   renderAll();
   renderBoard();
@@ -910,10 +1113,11 @@ function loseGame() {
   showResult({
     won: false,
     title: "矿区爆炸",
-    coins: risky ? -risky.penalty : 0,
+    coins: penalty ? -penalty : 0,
     xp: 0,
-    seconds: resultTime,
-    text: risky ? `虚空铸币吞掉了 ${risky.penalty} 金币。` : "地雷已全部显形，调整出战配置再来一局。"
+    seconds: game.elapsed,
+    meta: eliteResultMeta(),
+    text: eliteResultText(false, null, penalty ? -penalty : 0)
   });
 }
 
@@ -926,12 +1130,12 @@ function estimateReward(diff = currentDifficulty(), seconds = game ? game.elapse
   if (hasEffect("hardMult") && ["hard", "ultimate"].includes(diff.id)) itemMult *= 1.18;
   if (hasEffect("riskyMult")) itemMult *= 1.2;
   if (hasEffect("ultimateCore") && diff.id === "ultimate") itemMult *= 1.35;
-  if (hasEffect("remainBonus")) itemMult *= 1 + Math.max(0, diff.target - settledSeconds) / 60 * .02;
-  return Math.floor(BASE_REWARD * diff.weight * timeFactor * levelBonus() * itemMult);
+  if (hasEffect("remainBonus")) itemMult *= 1 + (Math.max(0, diff.target - settledSeconds) / 60) * 0.02;
+  const eliteMult = game && diff.id === game.diff.id ? eliteMultiplier() : 1;
+  return Math.floor(BASE_REWARD * diff.weight * timeFactor * levelBonus() * itemMult * eliteMult);
 }
 
 function updateEstimate() {
-  if (!el.estimate) return;
   el.estimate.textContent = estimateReward();
 }
 
@@ -960,16 +1164,8 @@ function neighbors(cell) {
   return result;
 }
 
-function ownedEffects(effect) {
-  return equippedItems().filter(item => item.effect === effect);
-}
-
-function hasEffect(effect) {
-  return ownedEffects(effect).length > 0;
-}
-
 function shuffle(list) {
-  return [...list].sort(() => Math.random() - .5);
+  return [...list].sort(() => Math.random() - 0.5);
 }
 
 function clamp(value, min, max) {
@@ -980,12 +1176,20 @@ function formatTime(seconds) {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
+function eliteMark(type) {
+  return {
+    vault: "V",
+    scout: "S",
+    doom: "D"
+  }[type] || "";
+}
+
 function symbolFor(effect) {
   return {
-    revealSafe: "⌕",
+    revealSafe: "⌁",
     markMine: "⚑",
     peek: "?",
-    openZero: "◇",
+    openZero: "◌",
     copyCharge: "+"
   }[effect] || "•";
 }

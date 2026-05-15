@@ -2,18 +2,47 @@
 
 [<kbd>中文</kbd>](./README.md) [<kbd>English</kbd>](./README_EN.md)
 
-Rune Mines is a browser-based Minesweeper variant with character progression, coin rewards, and permanent item builds. Players clear minefields of different sizes, earn coins and experience from victories, then upgrade their character and buy items to unlock higher-risk, higher-reward runs.
+Rune Mines is a browser-based Minesweeper variant with character progression, permanent items, loadout building, and a new elite risk-reward layer. Clear minefields, earn coins and XP, unlock stronger builds, and push better records on harder boards.
+
+## Latest Update
+
+This update ships 3 improvement areas around elite risk play:
+
+1. Elite cell system: each run now spawns visible `Vault`, `Scout`, and `Doom` cells with different outcomes.
+2. Better in-run feedback: the board now shows elite cells remaining, current bounty multiplier, and how many `Doom` triggers have fired.
+3. Stronger results and records: the result overlay now highlights elite bounty outcomes and tracks best reward / best clear time per difficulty.
 
 ## Features
 
 - Classic Minesweeper controls: left-click to reveal, right-click to flag.
-- Four difficulties: Easy, Advanced, Hard, and Ultimate, each with different board sizes, mine counts, target times, and reward weights.
-- Progression system: earn coins and XP from wins, then level up to increase the settlement multiplier.
-- Shop system: buy permanent items that apply automatically or provide active abilities in future runs.
-- Loadout system: owned items must be equipped to take effect, and higher levels unlock more passive and active slots.
-- Achievements and daily tasks: long-term goals are split into Beginner, Intermediate, Advanced, and Special achievements; daily tasks refresh each day and grant larger coin rewards.
-- Time-based rewards: faster clears increase the final coin payout.
-- Local save: level, XP, coins, and owned items are stored in browser `localStorage`.
+- Four difficulties with different board sizes, mine counts, target times, and reward weights.
+- Character progression with coins, XP, and level-based reward scaling.
+- Permanent item shop and loadout system.
+- Achievements and daily tasks for long-term progression.
+- Elite cell events that add meaningful risk-reward decisions inside each run.
+- Local save data stored in browser `localStorage`.
+
+## Elite Cells
+
+Each difficulty spawns a fixed number of elite cells:
+
+- `easy`: 1
+- `normal`: 2
+- `hard`: 3
+- `ultimate`: 4
+
+Elite types:
+
+- `Vault`
+  - Grants a `x1.12` run bounty multiplier
+  - Stacks multiplicatively
+- `Scout`
+  - Reveals up to 3 nearby safe unopened cells
+  - Falls back to 1 global safe reveal if no local target exists
+- `Doom`
+  - Grants a `x1.20` run bounty multiplier
+  - Adds 1 new hidden mine to a valid unopened safe cell
+  - If no valid cell exists, only the bounty bonus is kept
 
 ## Running
 
@@ -25,77 +54,23 @@ This is a pure frontend project with no build step.
 
 You can also run it with any static file server, such as VS Code Live Server.
 
-## Gameplay
+## Record Tracking
 
-After a run starts, the board appears in the center area. Reveal every safe cell while avoiding mines.
+The local save now persists:
 
-- Left-click: reveal a cell.
-- Right-click: place or remove a flag.
-- New Run: restart with the selected difficulty.
-- Level Up: spend coins to increase your level and reward multiplier.
-- Buy Items: shop items are permanent and apply in every run after purchase.
-- Reset Save: clear level, coins, and item data from the current browser.
+- `eliteOpened`
+- `eliteDoomTriggered`
+- `bestRewardByDifficulty`
+- `bestTimeByDifficulty`
 
-The first click has protection to avoid an immediate mine hit. Some items can expand the opening safe area even further.
-
-## Difficulty Table
-
-| Difficulty | Board | Mines | Weight | Target Time | Unlock Level |
-| --- | --- | --- | --- | --- | --- |
-| Easy | 9 x 9 | 10 | x1 | 3:00 | 1 |
-| Advanced | 14 x 14 | 32 | x3.2 | 5:00 | 1 |
-| Hard | 16 x 24 | 88 | x8 | 6:00 | 1 |
-| Ultimate | 18 x 30 | 145 | x17 | 8:00 | 10 |
-
-## Reward Formula
-
-Base coin formula:
-
-```text
-Coins = 120 × difficulty weight × time factor × level multiplier × item multiplier
-```
-
-Where:
-
-```text
-Time factor = target time / final settlement time
-```
-
-The time factor is clamped between `0.35` and `2.50`. Some items reduce settlement time, increase coin multipliers, or provide extra bonuses for Hard and Ultimate difficulty.
-
-XP gain is tied to difficulty weight. Ultimate runs can gain extra XP after buying the endgame item.
-
-## Item System
-
-Shop items unlock gradually by level:
-
-- Life-saving: prevent death after hitting a mine or provide extra tolerance.
-- Active: show buttons above the board to reveal safe cells, mark mines, peek unknown cells, and more.
-- Opening: automatically reveal safe cells, remove mines, or strengthen the first click.
-- Income: increase victory coins or add multipliers under specific conditions.
-- Settlement: reduce final settlement time to make speed rewards easier to trigger.
-- Endgame: strengthen coin and XP rewards in Ultimate difficulty.
-
-Purchased items only take effect after being selected in the loadout. At level 1, the player can equip 1 passive item and 1 active item. More slots unlock as the player levels up, reaching 2 passive slots and 3 active slots at level 10.
-
-The shop also sells the expensive Tactician Pass. If the next run uses more than the base slot limit, 1 pass is consumed to temporarily add 1 passive slot and 1 active slot. It is designed for score pushes and high-difficulty attempts.
-
-## Achievements And Daily Tasks
-
-Achievements are split into Beginner, Intermediate, Advanced, and Special groups. Beginner, Intermediate, and Advanced achievements are tiered goals, such as finishing 50, 100, and 200 games. Special achievements are one-time challenges, such as the first Hard clear, the first Ultimate clear, or winning without flags. Achievement rewards are paid automatically when unlocked.
-
-Daily tasks refresh by local date. They include goals such as finishing games, winning a run, and placing flags. Completed daily tasks must be claimed manually, and each task can only be claimed once per day.
+If a run beats the best reward or best clear time for the selected difficulty, the result panel will show `New Record`.
 
 ## Project Structure
 
 ```text
 Rune Mines/
-├── index.html   # Page structure and game UI containers
-├── styles.css   # Dark mine-themed UI, board, and responsive layout
-├── game.js      # Game rules, Minesweeper logic, save data, items, rewards
-└── README.md    # Chinese documentation
+├── index.html
+├── styles.css
+├── game.js
+└── README.md
 ```
-
-## Current State
-
-The project is currently a lightweight single-page game prototype. All logic lives in frontend files, making it a good base for achievements, more items, audio, animations, leaderboards, or level objectives.

@@ -105,8 +105,16 @@ h2 {
   gap: 10px;
 }
 
+.elite-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(88px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
 .player-strip div,
 .status-row div,
+.elite-row div,
 .upgrade-box,
 .difficulty-card,
 .shop-card,
@@ -364,6 +372,18 @@ strong {
   grid-template-columns: repeat(5, minmax(78px, 1fr));
 }
 
+.elite-row div:nth-child(1) strong {
+  color: #f1c676;
+}
+
+.elite-row div:nth-child(2) strong {
+  color: #9ee7a4;
+}
+
+.elite-row div:nth-child(3) strong {
+  color: #ff9d92;
+}
+
 .status-row div:nth-child(2) strong {
   color: #ff867d;
 }
@@ -442,6 +462,10 @@ strong {
   animation: itemImpact .34s ease;
 }
 
+.board-wrap.impact-elite {
+  animation: eliteImpact .44s ease;
+}
+
 .board-wrap.impact-win {
   animation: winGlow .62s ease;
 }
@@ -478,6 +502,40 @@ strong {
   animation: revealCell .14s ease-out;
 }
 
+.cell.elite {
+  position: relative;
+}
+
+.cell.elite:not(.open) {
+  box-shadow: inset 0 0 0 1px rgba(255, 232, 173, .38);
+}
+
+.cell.elite:not(.open)::after {
+  content: attr(data-elite-mark);
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 10px;
+  font-weight: 900;
+  color: #f7ecd2;
+  opacity: .88;
+}
+
+.cell.elite-vault:not(.open) {
+  border-color: rgba(224, 172, 84, .88);
+  box-shadow: inset 0 0 0 1px rgba(224, 172, 84, .42), 0 0 10px rgba(224, 172, 84, .10);
+}
+
+.cell.elite-scout:not(.open) {
+  border-color: rgba(106, 168, 201, .88);
+  box-shadow: inset 0 0 0 1px rgba(106, 168, 201, .42), 0 0 10px rgba(106, 168, 201, .10);
+}
+
+.cell.elite-doom:not(.open) {
+  border-color: rgba(201, 79, 69, .92);
+  box-shadow: inset 0 0 0 1px rgba(201, 79, 69, .46), 0 0 12px rgba(201, 79, 69, .14);
+}
+
 .cell.flagged {
   color: var(--gold);
   text-shadow: 0 0 10px rgba(224, 172, 84, .65);
@@ -500,6 +558,18 @@ strong {
 
 .cell.flash-guard {
   animation: guardCell .55s ease;
+}
+
+.cell.flash-eliteVault {
+  animation: eliteVaultCell .6s ease;
+}
+
+.cell.flash-eliteScout {
+  animation: eliteScoutCell .6s ease;
+}
+
+.cell.flash-eliteDoom {
+  animation: eliteDoomCell .6s ease;
 }
 
 .n1 { color: #155dbe; text-shadow: 0 1px 0 rgba(255, 255, 255, .28); }
@@ -620,6 +690,13 @@ strong {
   color: #95d3ff;
 }
 
+.result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
 #resultText {
   color: #f4d3aa;
   line-height: 1.5;
@@ -688,10 +765,34 @@ strong {
   100% { filter: brightness(1); }
 }
 
+@keyframes eliteImpact {
+  0% { filter: brightness(1); box-shadow: 0 0 0 rgba(224, 172, 84, 0); }
+  45% { filter: brightness(1.18) saturate(1.18); box-shadow: 0 0 44px rgba(224, 172, 84, .22); }
+  100% { filter: brightness(1); box-shadow: 0 0 0 rgba(224, 172, 84, 0); }
+}
+
 @keyframes winGlow {
   0% { box-shadow: 0 0 0 rgba(224, 172, 84, 0); }
   45% { box-shadow: 0 0 52px rgba(224, 172, 84, .35); }
   100% { box-shadow: 0 0 0 rgba(224, 172, 84, 0); }
+}
+
+@keyframes eliteVaultCell {
+  0% { box-shadow: 0 0 0 rgba(224, 172, 84, 0); }
+  35% { box-shadow: 0 0 20px rgba(224, 172, 84, .9); filter: brightness(1.24); }
+  100% { box-shadow: 0 0 0 rgba(224, 172, 84, 0); }
+}
+
+@keyframes eliteScoutCell {
+  0% { box-shadow: 0 0 0 rgba(106, 168, 201, 0); }
+  35% { box-shadow: 0 0 20px rgba(106, 168, 201, .92); filter: brightness(1.24); }
+  100% { box-shadow: 0 0 0 rgba(106, 168, 201, 0); }
+}
+
+@keyframes eliteDoomCell {
+  0% { box-shadow: 0 0 0 rgba(201, 79, 69, 0); }
+  35% { box-shadow: 0 0 22px rgba(201, 79, 69, .95); filter: brightness(1.25); }
+  100% { box-shadow: 0 0 0 rgba(201, 79, 69, 0); }
 }
 
 @keyframes resultIn {
@@ -717,7 +818,8 @@ strong {
 
   .topbar,
   .player-strip,
-  .status-row {
+  .status-row,
+  .elite-row {
     grid-template-columns: repeat(2, 1fr);
   }
 

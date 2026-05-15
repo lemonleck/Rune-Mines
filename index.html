@@ -31,7 +31,7 @@
 
         <div class="rules">
           <h2>结算公式</h2>
-          <p>金币 = 基础 120 × 难度权重 × 时间系数 × 等级倍率 × 道具倍率</p>
+          <p>金币 = 基础 120 × 难度权重 × 时间系数 × 等级倍率 × 道具倍率 × 精英赏金</p>
           <p>时间系数 = 目标时间 / 实际结算时间，最低 0.35，最高 2.50。</p>
         </div>
 
@@ -60,10 +60,15 @@
       <section class="board-panel">
         <div class="status-row">
           <div><span>模式</span><strong id="modeText">简单</strong></div>
-          <div><span>雷</span><strong id="mineText">10</strong></div>
-          <div><span>旗</span><strong id="flagText">0</strong></div>
+          <div><span>雷数</span><strong id="mineText">10</strong></div>
+          <div><span>旗数</span><strong id="flagText">0</strong></div>
           <div><span>时间</span><strong id="timerText">0s</strong></div>
-          <div><span>预计</span><strong id="estimateText">120</strong></div>
+          <div><span>预估</span><strong id="estimateText">120</strong></div>
+        </div>
+        <div class="elite-row" id="eliteRow">
+          <div><span>Elite Left</span><strong id="eliteRemainingText">0</strong></div>
+          <div><span>Bounty</span><strong id="eliteBonusText">x1.00</strong></div>
+          <div><span>Doom</span><strong id="eliteDoomText">0</strong></div>
         </div>
         <div class="message" id="messageText">左键翻开，右键插旗。先赢几局，给角色攒出第一套装备。</div>
         <div class="active-items" id="activeItems"></div>
@@ -98,6 +103,7 @@
         <div><span>经验</span><strong id="resultXp">0</strong></div>
         <div><span>用时</span><strong id="resultTime">0s</strong></div>
       </div>
+      <div class="result-meta" id="resultMeta"></div>
       <p id="resultText"></p>
       <div class="result-actions">
         <button id="closeResultBtn" class="ghost">继续查看</button>
