@@ -65,14 +65,20 @@
           <div><span>时间</span><strong id="timerText">0s</strong></div>
           <div><span>预估</span><strong id="estimateText">120</strong></div>
         </div>
-        <div class="elite-row" id="eliteRow">
+        <div class="elite-row">
           <div><span>Elite Left</span><strong id="eliteRemainingText">0</strong></div>
           <div><span>Bounty</span><strong id="eliteBonusText">x1.00</strong></div>
           <div><span>Doom</span><strong id="eliteDoomText">0</strong></div>
+          <div class="sfx-control">
+            <span>SFX</span>
+            <button id="soundToggleBtn" class="small sound-toggle" aria-pressed="true">ON</button>
+          </div>
         </div>
-        <div class="message" id="messageText">左键翻开，右键插旗。先赢几局，给角色攒出第一套装备。</div>
+        <div class="message" id="messageText">左键翻开，右键插旗。留意闭合格上的 Elite 标记，必要时再押注风险。</div>
+        <div class="feedback-ribbon" id="feedbackRibbon" aria-live="polite"></div>
         <div class="active-items" id="activeItems"></div>
         <div class="board-wrap" id="boardWrap">
+          <div class="board-fx-layer" id="boardFxLayer"></div>
           <div id="board" class="board"></div>
         </div>
       </section>
@@ -104,6 +110,7 @@
         <div><span>用时</span><strong id="resultTime">0s</strong></div>
       </div>
       <div class="result-meta" id="resultMeta"></div>
+      <div class="result-recap" id="resultRecap"></div>
       <p id="resultText"></p>
       <div class="result-actions">
         <button id="closeResultBtn" class="ghost">继续查看</button>

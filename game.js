@@ -1,5 +1,5 @@
 const BASE_REWARD = 120;
-const SAVE_KEY = "spire-mines-save-v2";
+const SAVE_KEY = "spire-mines-save-v3";
 
 const difficulties = [
   { id: "easy", name: "简单", rows: 9, cols: 9, mines: 10, weight: 1, target: 180, unlock: 1, note: "3 分钟目标，适合热身和攒第一批金币。" },
@@ -103,12 +103,14 @@ const el = {
   shopList: document.getElementById("shopList"),
   board: document.getElementById("board"),
   boardWrap: document.getElementById("boardWrap"),
+  boardFxLayer: document.getElementById("boardFxLayer"),
   mode: document.getElementById("modeText"),
   mines: document.getElementById("mineText"),
   flags: document.getElementById("flagText"),
   timer: document.getElementById("timerText"),
   estimate: document.getElementById("estimateText"),
   message: document.getElementById("messageText"),
+  feedbackRibbon: document.getElementById("feedbackRibbon"),
   activeItems: document.getElementById("activeItems"),
   upgradeCost: document.getElementById("upgradeCostText"),
   loadoutSummary: document.getElementById("loadoutSummary"),
@@ -124,10 +126,21 @@ const el = {
   resultXp: document.getElementById("resultXp"),
   resultTime: document.getElementById("resultTime"),
   resultMeta: document.getElementById("resultMeta"),
+  resultRecap: document.getElementById("resultRecap"),
   resultText: document.getElementById("resultText"),
   eliteRemaining: document.getElementById("eliteRemainingText"),
   eliteBonus: document.getElementById("eliteBonusText"),
-  eliteDoom: document.getElementById("eliteDoomText")
+  eliteDoom: document.getElementById("eliteDoomText"),
+  soundToggle: document.getElementById("soundToggleBtn")
+};
+
+const feedbackTimers = {
+  ribbon: null
+};
+
+const audioState = {
+  ctx: null,
+  unlocked: false
 };
 
 document.getElementById("newGameBtn").addEventListener("click", startGame);
@@ -135,6 +148,7 @@ document.getElementById("upgradeBtn").addEventListener("click", upgradeLevel);
 document.getElementById("resetBtn").addEventListener("click", resetSave);
 document.getElementById("closeResultBtn").addEventListener("click", hideResult);
 document.getElementById("resultNewGameBtn").addEventListener("click", startGame);
+el.soundToggle.addEventListener("click", toggleSoundSetting);
 
 renderAll();
 startGame();
@@ -161,7 +175,8 @@ function defaultSave() {
     quotaPasses: 0,
     achievements: [],
     stats: defaultStats(),
-    daily: defaultDaily()
+    daily: defaultDaily(),
+    settings: defaultSettings()
   };
 }
 
@@ -185,6 +200,10 @@ function defaultDaily() {
   return { date: todayKey(), claimed: [], stats: { games: 0, wins: 0, flags: 0 } };
 }
 
+function defaultSettings() {
+  return { soundEnabled: true };
+}
+
 function normalizeSave(data) {
   const statsDefaults = defaultStats();
   data.owned = Array.isArray(data.owned) ? data.owned : [];
@@ -201,6 +220,7 @@ function normalizeSave(data) {
   data.daily = { ...defaultDaily(), ...(data.daily || {}) };
   data.daily.claimed = Array.isArray(data.daily.claimed) ? data.daily.claimed : [];
   data.daily.stats = { ...defaultDaily().stats, ...(data.daily.stats || {}) };
+  data.settings = { ...defaultSettings(), ...(data.settings || {}) };
   if (data.daily.date !== todayKey()) data.daily = defaultDaily();
   normalizeLoadout(data);
   return data;
@@ -295,6 +315,114 @@ function upgradeCost() {
   return Math.round(100 * Math.pow(save.level, 1.72));
 }
 
+function soundEnabled() {
+  return !!save.settings.soundEnabled;
+}
+
+function renderSoundToggle() {
+  el.soundToggle.textContent = soundEnabled() ? "ON" : "OFF";
+  el.soundToggle.setAttribute("aria-pressed", soundEnabled() ? "true" : "false");
+  el.soundToggle.classList.toggle("muted", !soundEnabled());
+}
+
+function toggleSoundSetting() {
+  save.settings.soundEnabled = !soundEnabled();
+  persist();
+  renderSoundToggle();
+  unlockAudio();
+  if (soundEnabled()) {
+    playSound("toggleOn");
+    pushRibbon("音效已开启", "tone-info");
+  } else {
+    pushRibbon("音效已静音", "tone-doom");
+  }
+}
+
+function unlockAudio() {
+  if (audioState.unlocked) return;
+  const AudioCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtor) return;
+  if (!audioState.ctx) audioState.ctx = new AudioCtor();
+  if (audioState.ctx.state === "suspended") {
+    audioState.ctx.resume().catch(() => {});
+  }
+  audioState.unlocked = true;
+}
+
+function playTone(frequency, duration, options = {}) {
+  if (!soundEnabled()) return;
+  const AudioCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtor) return;
+  if (!audioState.ctx) audioState.ctx = new AudioCtor();
+  const ctx = audioState.ctx;
+  if (ctx.state === "suspended") return;
+
+  const oscillator = ctx.createOscillator();
+  const gain = ctx.createGain();
+  oscillator.type = options.type || "sine";
+  oscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
+  oscillator.frequency.exponentialRampToValueAtTime((options.endFrequency || frequency) + 0.001, ctx.currentTime + duration);
+  gain.gain.setValueAtTime(options.volume || 0.025, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+  oscillator.connect(gain);
+  gain.connect(ctx.destination);
+  oscillator.start();
+  oscillator.stop(ctx.currentTime + duration);
+}
+
+function playChord(notes, duration, options = {}) {
+  notes.forEach((note, index) => {
+    window.setTimeout(() => playTone(note, duration, options), index * (options.delay || 45));
+  });
+}
+
+function playSound(kind) {
+  if (!soundEnabled()) return;
+  if (!audioState.ctx || audioState.ctx.state === "suspended") return;
+  const soundMap = {
+    open: () => playTone(500, 0.08, { type: "triangle", endFrequency: 640, volume: 0.018 }),
+    chain: () => playChord([420, 560, 680], 0.12, { type: "triangle", volume: 0.012, delay: 30 }),
+    flag: () => playTone(300, 0.06, { type: "square", endFrequency: 260, volume: 0.022 }),
+    unflag: () => playTone(260, 0.05, { type: "square", endFrequency: 320, volume: 0.016 }),
+    item: () => playChord([620, 760], 0.08, { type: "triangle", volume: 0.016, delay: 22 }),
+    guard: () => playChord([430, 520, 610], 0.12, { type: "sine", volume: 0.018, delay: 35 }),
+    vault: () => playChord([660, 820, 980], 0.12, { type: "triangle", volume: 0.016, delay: 28 }),
+    scout: () => playChord([520, 700, 920], 0.12, { type: "triangle", volume: 0.014, delay: 22 }),
+    doom: () => playChord([260, 220, 170], 0.18, { type: "sawtooth", volume: 0.02, delay: 42 }),
+    win: () => playChord([520, 660, 780, 1040], 0.16, { type: "triangle", volume: 0.018, delay: 45 }),
+    loss: () => playChord([340, 240, 170], 0.18, { type: "sawtooth", volume: 0.018, delay: 55 }),
+    toggleOn: () => playChord([620, 900], 0.08, { type: "triangle", volume: 0.014, delay: 28 })
+  };
+  soundMap[kind]?.();
+}
+
+function pushRibbon(text, tone = "tone-info") {
+  if (!el.feedbackRibbon) return;
+  window.clearTimeout(feedbackTimers.ribbon);
+  el.feedbackRibbon.textContent = text;
+  el.feedbackRibbon.className = `feedback-ribbon show ${tone}`;
+  feedbackTimers.ribbon = window.setTimeout(() => {
+    el.feedbackRibbon.className = "feedback-ribbon";
+  }, 1450);
+}
+
+function spawnBoardBurst(label, tone = "info") {
+  if (!el.boardFxLayer) return;
+  const node = document.createElement("div");
+  node.className = `board-burst burst-${tone}`;
+  node.textContent = label;
+  el.boardFxLayer.appendChild(node);
+  window.setTimeout(() => node.remove(), 1200);
+}
+
+function celebrateEvent({ message, ribbon, burst, sound, boardImpact }) {
+  if (message) el.message.textContent = message;
+  if (ribbon) pushRibbon(ribbon.text, ribbon.tone);
+  if (burst) spawnBoardBurst(burst.label, burst.tone);
+  if (boardImpact) triggerBoardFeedback(boardImpact);
+  if (sound) playSound(sound);
+}
+
 function recordFinishedGame(won, reward = 0) {
   ensureDaily();
   save.stats.games += 1;
@@ -316,8 +444,8 @@ function updateBestRecords(reward, seconds) {
     save.stats.bestRewardByDifficulty[game.diff.id] = reward;
     result.reward = true;
   }
-  const currentBest = save.stats.bestTimeByDifficulty[game.diff.id];
-  if (!currentBest || seconds < currentBest) {
+  const bestTime = save.stats.bestTimeByDifficulty[game.diff.id];
+  if (!bestTime || seconds < bestTime) {
     save.stats.bestTimeByDifficulty[game.diff.id] = seconds;
     result.time = true;
   }
@@ -336,7 +464,12 @@ function checkAchievements(showMessage = true) {
   });
   if (showMessage) {
     const totalReward = newlyUnlocked.reduce((sum, item) => sum + item.reward, 0);
-    el.message.textContent = `解锁成就：${newlyUnlocked.map(item => item.name).join("、")}，奖励 ${totalReward} 金币。`;
+    celebrateEvent({
+      message: `解锁成就：${newlyUnlocked.map(item => item.name).join("、")}，奖励 ${totalReward} 金币。`,
+      ribbon: { text: `成就奖励 +${totalReward}`, tone: "tone-vault" },
+      burst: { label: "Achievement", tone: "vault" },
+      sound: "vault"
+    });
   }
 }
 
@@ -352,6 +485,7 @@ function renderAll() {
   renderEliteSummary();
   renderAchievements();
   renderDailyTasks();
+  renderSoundToggle();
   updateEstimate();
 }
 
@@ -391,6 +525,7 @@ function renderDifficulties() {
       </div>
     `;
     card.addEventListener("click", () => {
+      unlockAudio();
       save.selected = diff.id;
       persist();
       renderAll();
@@ -453,11 +588,17 @@ function renderShop() {
 
 function buyQuotaPass() {
   if (save.coins < quotaPass.price) return;
+  unlockAudio();
   save.coins -= quotaPass.price;
   save.quotaPasses += 1;
   persist();
   renderAll();
-  el.message.textContent = `已购买 ${quotaPass.name}，下次超载出战时会自动消耗。`;
+  celebrateEvent({
+    message: `已购买 ${quotaPass.name}，下次超额出战时会自动消耗。`,
+    ribbon: { text: "战术配额 +1", tone: "tone-info" },
+    burst: { label: "Quota +1", tone: "info" },
+    sound: "item"
+  });
 }
 
 function renderAchievements() {
@@ -503,6 +644,7 @@ function renderDailyTasks() {
 }
 
 function claimDailyTask(id) {
+  unlockAudio();
   ensureDaily();
   const task = dailyTaskTemplates.find(entry => entry.id === id);
   if (!task || save.daily.claimed.includes(id) || task.progress(save.daily) < task.target) return;
@@ -510,7 +652,12 @@ function claimDailyTask(id) {
   save.coins += task.reward;
   persist();
   renderAll();
-  el.message.textContent = `每日任务完成，获得 ${task.reward} 金币。`;
+  celebrateEvent({
+    message: `每日任务完成：获得 ${task.reward} 金币。`,
+    ribbon: { text: `Daily +${task.reward}`, tone: "tone-vault" },
+    burst: { label: "Daily Cleared", tone: "vault" },
+    sound: "vault"
+  });
 }
 
 function renderLoadout() {
@@ -551,6 +698,7 @@ function renderLoadoutGroup(slot, target, limit, baseLimit) {
 }
 
 function toggleLoadout(slot, id) {
+  unlockAudio();
   const list = save.loadout[slot];
   const index = list.indexOf(id);
   if (index >= 0) {
@@ -560,6 +708,7 @@ function toggleLoadout(slot, id) {
   }
   persist();
   renderAll();
+  playSound("item");
 }
 
 function renderActiveItems() {
@@ -592,17 +741,25 @@ function renderEliteSummary() {
   el.eliteRemaining.textContent = String(game.cells.filter(cell => cell.eliteType && !cell.open).length);
   el.eliteBonus.textContent = `x${eliteMultiplier().toFixed(2)}`;
   el.eliteDoom.textContent = String(game.eliteRun.doomCount);
+  const hot = game.eliteRun.doomCount > 0;
+  el.eliteDoom.parentElement.classList.toggle("elite-hot", hot);
 }
 
 function buyItem(item) {
   if (save.level < item.min || save.owned.includes(item.id) || save.coins < item.price) return;
+  unlockAudio();
   save.coins -= item.price;
   save.owned.push(item.id);
   autoEquipItem(item);
   checkAchievements();
   persist();
   renderAll();
-  el.message.textContent = `已购买 ${item.name}。`;
+  celebrateEvent({
+    message: `已购买 ${item.name}。`,
+    ribbon: { text: `Shop: ${item.name}`, tone: "tone-info" },
+    burst: { label: item.name, tone: "info" },
+    sound: "item"
+  });
 }
 
 function autoEquipItem(item) {
@@ -615,11 +772,18 @@ function autoEquipItem(item) {
 function upgradeLevel() {
   const cost = upgradeCost();
   if (save.level >= 20 || save.coins < cost) return;
+  unlockAudio();
   save.coins -= cost;
   save.level += 1;
   save.xp = 0;
   persist();
   renderAll();
+  celebrateEvent({
+    message: `等级提升至 ${save.level}。`,
+    ribbon: { text: `Level ${save.level}`, tone: "tone-vault" },
+    burst: { label: `Lv.${save.level}`, tone: "vault" },
+    sound: "vault"
+  });
 }
 
 function resetSave() {
@@ -644,6 +808,7 @@ function startGame() {
     save.quotaPasses -= 1;
     persist();
   }
+
   const diff = { ...currentDifficulty() };
   const size = diff.cols >= 24 ? 26 : diff.cols >= 14 ? 31 : 40;
   game = {
@@ -664,8 +829,8 @@ function startGame() {
     eliteRun: {
       opened: 0,
       vaultBonus: 0,
-      doomCount: 0,
-      scoutTriggers: 0
+      scoutTriggers: 0,
+      doomCount: 0
     }
   };
 
@@ -678,13 +843,18 @@ function startGame() {
   assignEliteCells();
   hideResult();
   clearBoardFeedback();
+  clearBoardFx();
   el.board.style.gridTemplateColumns = `repeat(${diff.cols}, var(--cell-size))`;
   el.board.style.setProperty("--cell-size", `${size}px`);
   el.mode.textContent = diff.name;
   el.mines.textContent = diff.mines;
-  el.message.textContent = boosted
-    ? `${diff.name} 探险开始，临时配额已消耗 1 张增编令。`
-    : `${diff.name} 探险开始。右键插旗，留意闭合格上的 Elite 标记。`;
+  celebrateEvent({
+    message: boosted
+      ? `${diff.name} 探险开始，已消耗 1 张战术增编令。`
+      : `${diff.name} 探险开始。右键插旗，留意闭合格上的 Elite 标记。`,
+    ribbon: { text: `${diff.name} Run`, tone: "tone-info" },
+    burst: { label: "New Run", tone: "info" }
+  });
   renderLoadout();
   renderBoard();
   renderActiveItems();
@@ -743,9 +913,8 @@ function assignEliteCells() {
   pool.forEach((cell, index) => {
     const choices = ["vault", "scout"];
     if (doomUsed < config.doomLimit) choices.push("doom");
-    if (game.diff.id === "hard" || game.diff.id === "ultimate") {
-      if (config.count - index <= config.doomLimit - doomUsed) cell.eliteType = "doom";
-      else cell.eliteType = shuffle(choices)[0];
+    if ((game.diff.id === "hard" || game.diff.id === "ultimate") && config.count - index <= config.doomLimit - doomUsed) {
+      cell.eliteType = "doom";
     } else {
       cell.eliteType = shuffle(choices)[0];
     }
@@ -782,6 +951,7 @@ function renderBoard() {
 
 function handleOpen(cell) {
   if (game.over || cell.open || cell.flag) return;
+  unlockAudio();
   if (game.firstClick) protectFirstClick(cell);
   game.firstClick = false;
 
@@ -794,8 +964,13 @@ function handleOpen(cell) {
       const rescued = openArea(cell);
       triggerOpenedElites(rescued);
       flashCells([cell], "guard");
-      triggerBoardFeedback("guard");
-      el.message.textContent = `余烬之心挡下了一次爆炸，剩余免死 ${game.lives} 次。`;
+      celebrateEvent({
+        message: `余烬之心挡下了一次爆炸，剩余免死 ${game.lives} 次。`,
+        ribbon: { text: "护命生效", tone: "tone-guard" },
+        burst: { label: "Second Chance", tone: "guard" },
+        sound: "guard",
+        boardImpact: "guard"
+      });
       renderBoard();
       checkWin();
       return;
@@ -806,6 +981,12 @@ function handleOpen(cell) {
 
   const opened = openArea(cell);
   triggerOpenedElites(opened);
+  const chain = opened.length >= 4;
+  playSound(chain ? "chain" : "open");
+  if (chain) {
+    pushRibbon(`连锁展开 ${opened.length} 格`, "tone-chain");
+    spawnBoardBurst(`+${opened.length}`, "chain");
+  }
   renderBoard();
   checkWin();
 }
@@ -831,11 +1012,17 @@ function protectFirstClick(cell) {
 
 function toggleFlag(cell) {
   if (game.over || cell.open) return;
+  unlockAudio();
   ensureDaily();
   if (!cell.flag && game.flagGuard && !cell.mine) {
     game.flagGuard = false;
     cell.peeked = true;
-    el.message.textContent = "引线剪提醒：这里不是雷。";
+    celebrateEvent({
+      message: "引线剪提醒：这里不是雷。",
+      ribbon: { text: "错误插旗已拦截", tone: "tone-guard" },
+      burst: { label: "Guard", tone: "guard" },
+      sound: "guard"
+    });
     renderBoard();
     return;
   }
@@ -844,6 +1031,7 @@ function toggleFlag(cell) {
   if (cell.flag) save.daily.stats.flags += 1;
   persist();
   renderDailyTasks();
+  playSound(cell.flag ? "flag" : "unflag");
   renderBoard();
 }
 
@@ -883,8 +1071,13 @@ function applyEliteEffect(cell) {
   if (cell.eliteType === "vault") {
     game.eliteRun.vaultBonus += 1;
     flashCells([cell], "eliteVault");
-    triggerBoardFeedback("elite");
-    el.message.textContent = "Elite Vault 已开启，本局金币赏金 +12%。";
+    celebrateEvent({
+      message: "Elite Vault 已开启，本局金币赏金 +12%。",
+      ribbon: { text: "Vault +12%", tone: "tone-vault" },
+      burst: { label: "Vault", tone: "vault" },
+      sound: "vault",
+      boardImpact: "elite"
+    });
     return;
   }
 
@@ -901,10 +1094,15 @@ function applyEliteEffect(cell) {
     }
     game.eliteRun.scoutTriggers += 1;
     flashCells([cell, ...affected], "eliteScout");
-    triggerBoardFeedback("elite");
-    el.message.textContent = affected.length
-      ? `Elite Scout 额外侦测了 ${affected.length} 个安全格。`
-      : "Elite Scout 已触发，但没有可展开的安全格。";
+    celebrateEvent({
+      message: affected.length
+        ? `Elite Scout 额外侦测了 ${affected.length} 个安全格。`
+        : "Elite Scout 已触发，但没有可展开的安全格。",
+      ribbon: { text: affected.length ? `Scout +${affected.length}` : "Scout Triggered", tone: "tone-scout" },
+      burst: { label: "Scout", tone: "scout" },
+      sound: "scout",
+      boardImpact: "elite"
+    });
     triggerOpenedElites(affected);
     return;
   }
@@ -917,15 +1115,21 @@ function applyEliteEffect(cell) {
   }
   game.eliteRun.doomCount += 1;
   flashCells(promoted ? [cell, promoted] : [cell], "eliteDoom");
-  triggerBoardFeedback("elite");
-  el.message.textContent = promoted
-    ? "Elite Doom 已触发：赏金 +20%，同时矿区新增 1 颗地雷。"
-    : "Elite Doom 已触发：赏金 +20%，但没有合法位置可新增地雷。";
+  celebrateEvent({
+    message: promoted
+      ? "Elite Doom 已触发：赏金 +20%，同时矿区新增 1 颗地雷。"
+      : "Elite Doom 已触发：赏金 +20%，但没有合法位置可新增地雷。",
+    ribbon: { text: promoted ? "Doom +1 Mine" : "Doom +20%", tone: "tone-doom" },
+    burst: { label: "Doom", tone: "doom" },
+    sound: "doom",
+    boardImpact: "elite"
+  });
 }
 
 function useItem(id) {
   const item = items.find(entry => entry.id === id);
   if (!item || !game.charges[id]) return;
+  unlockAudio();
 
   let affected = [];
   game.lastUsedItem = null;
@@ -970,7 +1174,6 @@ function useItem(id) {
     const target = Object.keys(game.charges).find(key => key !== id && game.charges[key] > 0);
     if (target) {
       game.charges[target] += 1;
-      affected = [];
     }
   }
 
@@ -978,7 +1181,13 @@ function useItem(id) {
   game.lastUsedItem = id;
   triggerOpenedElites(affected);
   flashCells(affected, item.effect === "markMine" ? "mineHint" : "item");
-  triggerBoardFeedback("item");
+  celebrateEvent({
+    message: `${item.name} 已发动。`,
+    ribbon: { text: item.name, tone: "tone-info" },
+    burst: { label: symbolFor(item.effect), tone: "info" },
+    sound: "item",
+    boardImpact: "item"
+  });
   renderBoard();
   checkWin();
 }
@@ -1006,14 +1215,18 @@ function triggerBoardFeedback(type) {
   el.boardWrap.classList.remove(className);
   void el.boardWrap.offsetWidth;
   el.boardWrap.classList.add(className);
-  window.setTimeout(() => el.boardWrap.classList.remove(className), 620);
+  window.setTimeout(() => el.boardWrap.classList.remove(className), 700);
 }
 
 function clearBoardFeedback() {
   el.boardWrap.classList.remove("impact-boom", "impact-guard", "impact-item", "impact-elite", "impact-win");
 }
 
-function showResult({ won, title, coins, xp, seconds, meta = [], text }) {
+function clearBoardFx() {
+  if (el.boardFxLayer) el.boardFxLayer.innerHTML = "";
+}
+
+function showResult({ won, title, coins, xp, seconds, meta = [], recap = [], text }) {
   el.resultOverlay.hidden = false;
   el.resultOverlay.classList.toggle("loss", !won);
   el.resultOverlay.classList.toggle("win", won);
@@ -1023,6 +1236,12 @@ function showResult({ won, title, coins, xp, seconds, meta = [], text }) {
   el.resultXp.textContent = xp > 0 ? `+${xp}` : `${xp}`;
   el.resultTime.textContent = `${seconds}s`;
   el.resultMeta.innerHTML = meta.map(entry => `<span class="tag">${entry}</span>`).join("");
+  el.resultRecap.innerHTML = recap.map(entry => `
+    <div class="recap-card">
+      <span>${entry.label}</span>
+      <strong>${entry.value}</strong>
+    </div>
+  `).join("");
   el.resultText.innerHTML = text;
 }
 
@@ -1030,6 +1249,7 @@ function hideResult() {
   el.resultOverlay.hidden = true;
   el.resultOverlay.classList.remove("win", "loss");
   el.resultMeta.innerHTML = "";
+  el.resultRecap.innerHTML = "";
 }
 
 function eliteMultiplier() {
@@ -1050,15 +1270,34 @@ function eliteResultMeta(records = null) {
   return meta;
 }
 
+function eliteResultRecap(records = null) {
+  if (!game) return [];
+  return [
+    { label: "精英翻开", value: String(game.eliteRun.opened) },
+    { label: "Vault", value: String(game.eliteRun.vaultBonus) },
+    { label: "Scout", value: String(game.eliteRun.scoutTriggers) },
+    { label: "Doom", value: String(game.eliteRun.doomCount) },
+    { label: "最终赏金", value: `x${eliteMultiplier().toFixed(2)}` },
+    { label: "记录状态", value: records?.reward || records?.time ? "New Record" : "Stable" }
+  ];
+}
+
+function resultFlavor(won, records) {
+  if (won && records?.reward && records?.time) return "一局双刷记录，尖塔今天替你记住了这个名字。";
+  if (won && game.eliteRun.doomCount >= 2) return "带着 Doom 的火药味清场，这一局赢得很凶。";
+  if (won && game.eliteRun.vaultBonus >= 2) return "赏金层层叠起，这是一场漂亮的高价值通关。";
+  if (!won && game.eliteRun.doomCount > 0) return "你把风险吃满了，只差最后一点控制力。";
+  if (!won) return "矿区没有放水，但你已经摸清它的脾气了。";
+  return "节奏很稳，下一局还可以再往上压。";
+}
+
 function eliteResultText(won, records, coinDelta) {
-  const bonus = `本局触发精英格 ${game.eliteRun.opened} 次，赏金倍率为 x${eliteMultiplier().toFixed(2)}。`;
-  if (won) {
-    const notes = [];
-    if (records?.reward) notes.push(`刷新了 ${game.diff.name} 难度最高金币记录。`);
-    if (records?.time) notes.push(`刷新了 ${game.diff.name} 难度最快通关记录。`);
-    return `${bonus}<br>本局共结算 ${coinDelta} 金币。${notes.length ? `<br>${notes.join("<br>")}` : ""}`;
-  }
-  return `${bonus}<br>${coinDelta < 0 ? `失败额外损失 ${Math.abs(coinDelta)} 金币。` : "这次未能带走赏金，下次再冲一把。"}`;
+  const lines = [
+    `本局触发精英格 ${game.eliteRun.opened} 次，最终赏金倍率为 x${eliteMultiplier().toFixed(2)}。`,
+    won ? `本局共结算 ${coinDelta} 金币。` : coinDelta < 0 ? `失败额外损失 ${Math.abs(coinDelta)} 金币。` : "这次未能带走赏金，下次再冲一把。",
+    resultFlavor(won, records)
+  ];
+  return lines.join("<br>");
 }
 
 function winGame() {
@@ -1074,14 +1313,17 @@ function winGame() {
     save.xp -= save.level * 100;
     save.level += 1;
   }
-  checkAchievements();
+  checkAchievements(false);
   persist();
-  if (!el.message.textContent.startsWith("解锁成就")) {
-    el.message.textContent = `胜利！获得 ${reward} 金币，${xpGain} 经验。`;
-  }
+  celebrateEvent({
+    message: `胜利！获得 ${reward} 金币，${xpGain} 经验。`,
+    ribbon: { text: records.reward || records.time ? "Victory + Record" : "Victory", tone: "tone-vault" },
+    burst: { label: "Cleared", tone: "vault" },
+    sound: "win",
+    boardImpact: "win"
+  });
   renderAll();
   renderBoard();
-  triggerBoardFeedback("win");
   showResult({
     won: true,
     title: "精英矿区已清空",
@@ -1089,6 +1331,7 @@ function winGame() {
     xp: xpGain,
     seconds: game.elapsed,
     meta: eliteResultMeta(records),
+    recap: eliteResultRecap(records),
     text: eliteResultText(true, records, reward)
   });
 }
@@ -1100,16 +1343,19 @@ function loseGame() {
   const penalty = risky ? risky.penalty : 0;
   if (risky) save.coins = Math.max(0, save.coins - penalty);
   recordFinishedGame(false);
-  checkAchievements();
+  checkAchievements(false);
   persist();
-  if (!el.message.textContent.startsWith("解锁成就")) {
-    el.message.textContent = risky
+  celebrateEvent({
+    message: risky
       ? `爆炸失败，虚空铸币吞掉了 ${penalty} 金币。`
-      : "爆炸失败，调整出战配置后再试一次。";
-  }
+      : "爆炸失败，调整出战配置后再试一次。",
+    ribbon: { text: risky ? `Failure -${penalty}` : "Failure", tone: "tone-doom" },
+    burst: { label: "Shattered", tone: "doom" },
+    sound: "loss",
+    boardImpact: "boom"
+  });
   renderAll();
   renderBoard();
-  triggerBoardFeedback("boom");
   showResult({
     won: false,
     title: "矿区爆炸",
@@ -1117,6 +1363,7 @@ function loseGame() {
     xp: 0,
     seconds: game.elapsed,
     meta: eliteResultMeta(),
+    recap: eliteResultRecap(),
     text: eliteResultText(false, null, penalty ? -penalty : 0)
   });
 }
@@ -1141,9 +1388,9 @@ function updateEstimate() {
 
 function tick() {
   if (!game || game.over) return;
-  const dailyDate = save.daily.date;
+  const previousDate = save.daily.date;
   ensureDaily();
-  if (save.daily.date !== dailyDate) {
+  if (save.daily.date !== previousDate) {
     persist();
     renderDailyTasks();
   }
